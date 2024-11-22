@@ -1,5 +1,5 @@
 const setRateLimit = require("express-rate-limit");
-const authJwt = require('./authJwt');
+const User = require("../models/user.js");
 
 const setRateLimitMiddleware = setRateLimit({
     windowMs: 60*1000,
@@ -15,9 +15,17 @@ const setRateLimitAdminMiddleware = setRateLimit({
     headers: true,
 });
 
-const setRateLimitRole = authJwt.isAdmin ? setRateLimitAdminMiddleware : setRateLimitMiddleware;
+const settingRateLimiter = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.userId);
+        const limiter = user?.role === true ? setRateLimitAdminMiddleware : setRateLimitMiddleware;
+        return limiter(req, res, next);
+    } catch (error) {
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+};
 
 const rateLimiter = {
-    setRateLimitRole,
+    settingRateLimiter,
 };
 module.exports = rateLimiter;
